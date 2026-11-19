@@ -36,6 +36,7 @@ import importer
 import munito    # M15: Munito AI, new optional features only (off without MUNITO_API_KEY)
 import munito_coverage
 import munito_topics
+import munito_weekly
 from embeddings       import embed, get_model, model_state, MODEL_NAME
 from detector         import (knn_distance, unit, baseline_stats, DistanceCUSUM, RateCUSUM,
                               is_refusal_or_empty)
@@ -190,6 +191,7 @@ async def lifespan(app):
     threading.Thread(target=_incident_sweeper, name="incident-sweeper", daemon=True).start()
     demo_feed.start()   # Volt demo answers every 10 min, 09:00-21:00 IST (only if VOLT_API_KEY is set)
     digest.start(_notify)  # M14: one digest per bot per day at DIGEST_AT_IST (20:30 IST)
+    munito_weekly.start(_notify_own)   # M15: weekly report; nothing unless MUNITO_API_KEY + MUNITO_WEEKLY_REPORT=1
     print(f"Startup complete. database: {db_state['status']}", flush=True)
     yield
     # Shutdown: nothing to clean up (connections are opened per request).
@@ -991,6 +993,12 @@ def _notify(company_id, text):
     return False
 
 
+def _notify_own(company_id, text):
+    """M15 weekly report: the bot's own Slack webhook only (never the owner's fallback)."""
+    own = _bot_webhook(int(company_id))
+    return send_slack_text(text, webhook=own) if own else False
+
+
 def _incident_step(conn, company_id, alarms, signal, quality_only=False):
     """Load the company's current incident, close it if quiet, apply this answer's
     signal, store it. Returns (actions that need a Slack message, incident).
@@ -1144,7 +1152,8 @@ def _bot_health_for(company):
         counts = bot_counts(conn, company["id"])
         review_body = get_baseline_review(conn, company["id"])
         # M15: sampled vs full coverage, last 24 h; only with MUNITO_API_KEY (else the answer is as before)
-        extra = {"checks": munito_coverage.counts(conn, company["id"])} if munito.api_key() else {}
+        extra = ({"checks": munito_coverage.counts(conn, company["id"]),
+                  "weekly": munito_weekly.latest(conn, company["id"])} if munito.api_key() else {})
     return {"company": company["company_name"], **_learning_view(learning), **counts, "baseline_review": review_body,
             **extra}
 

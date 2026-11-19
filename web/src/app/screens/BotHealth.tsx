@@ -124,6 +124,20 @@ function ChecksCard({ c }: { c: NonNullable<Health["checks"]> }) {
   );
 }
 
+/** The weekly report (Munito, optional): a short summary written from the week's numbers. */
+function WeeklyCard({ w }: { w: NonNullable<Health["weekly"]> }) {
+  const byModel = !w.written_by.startsWith("numbers only");
+  return (
+    <Card title={`Weekly report${w.period ? `, ${w.period}` : ""}`}>
+      <p className="m-0 max-w-[75ch]">{w.summary}</p>
+      <p className="text-xs text-subtle mt-3 mb-0">
+        {byModel ? "Written by an LLM from this bot's numbers; every number in it is checked against them." : "From this bot's numbers."}
+        {w.slack_sent ? " Also posted to this bot's Slack." : ""}
+      </p>
+    </Card>
+  );
+}
+
 export default function BotHealth() {
   const q = useApi<Health>(paths.health());
   useEffect(() => { const t = setInterval(() => q.reload(true), 60_000); return () => clearInterval(t); }, [q.reload]);
@@ -147,6 +161,7 @@ export default function BotHealth() {
             {h.baseline_review && <ReviewCard r={h.baseline_review} />}
             <DigestCard />
             {h.checks && <ChecksCard c={h.checks} />}
+            {h.weekly && <WeeklyCard w={h.weekly} />}
             {!isDemo() && h.slack && <SlackCard slack={h.slack} onChange={() => q.reload(true)} />}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatTile label="Threshold (distance from normal)"

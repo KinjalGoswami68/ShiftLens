@@ -332,5 +332,60 @@ class Topics(unittest.TestCase):
         self.assertEqual(mt.name([], chat=chat), (None, "no example questions"))
 
 
+class Weekly(unittest.TestCase):
+    """Feature 3: one plain summary per bot per week, from the existing numbers."""
+
+    WEEK = {"answers": 504, "flagged": 10, "nonanswers": 5, "avg_len": 212.4, "quality": {"refusal": 5},
+            "spot_checked": 30, "spot_problems": 2, "spot_examples": []}
+    PREV = {"answers": 480, "flagged": 4, "nonanswers": 3, "avg_len": 205.0, "quality": {},
+            "spot_checked": 28, "spot_problems": 0, "spot_examples": []}
+
+    def facts(self):
+        import munito_weekly as mw
+        s, e, _ = mw.week_bounds(datetime(2026, 11, 24, 15, 0, tzinfo=timezone.utc))
+        return mw.build_facts("Volt", self.WEEK, self.PREV, [{"id": 9, "cause": "prompt_change"}], "ready", s, e)
+
+    def test_skipped_without_key(self):
+        import munito_weekly as mw
+        import database
+        with mock.patch.dict(os.environ, ALL_FLAGS):
+            os.environ.pop("MUNITO_API_KEY", None)
+            with mock.patch.object(mw.threading, "Thread", boom):
+                self.assertFalse(mw.start(lambda *a: True))
+            with mock.patch.object(database, "connection", boom):
+                self.assertEqual(mw.run_once(boom), 0)
+
+    def test_week_and_due(self):
+        import munito_weekly as mw
+        # Tue 24 Nov 2026 20:30 IST -> the week Mon 16 Nov 00:00 IST .. Mon 23 Nov 00:00 IST
+        s, e, key = mw.week_bounds(datetime(2026, 11, 24, 15, 0, tzinfo=timezone.utc))
+        self.assertEqual((str(key), s.isoformat(), e.isoformat()),
+                         ("2026-11-23", "2026-11-15T18:30:00+00:00", "2026-11-22T18:30:00+00:00"))
+        self.assertEqual(self.facts()["week"], "16 Nov to 22 Nov")
+        mon_2030 = datetime(2026, 11, 23, 15, 0, tzinfo=timezone.utc)      # Mon 20:30 IST: not yet
+        mon_2045 = datetime(2026, 11, 23, 15, 15, tzinfo=timezone.utc)     # Mon 20:45 IST: due
+        tue_0830 = datetime(2026, 11, 24, 3, 0, tzinfo=timezone.utc)       # Tue 08:30 IST: outside the window
+        tue_1000 = datetime(2026, 11, 24, 4, 30, tzinfo=timezone.utc)      # Tue 10:00 IST: catch-up
+        self.assertEqual([mw.due(t) for t in (mon_2030, mon_2045, tue_0830, tue_1000)], [False, True, False, True])
+
+    def test_invented_numbers_fall_back_to_plain(self):
+        import munito_weekly as mw
+        f = self.facts()
+        good = lambda m: json.dumps({"summary": "Volt answered 504 questions, up from 480; 2% were flagged. One incident: prompt change."})
+        bad = lambda m: json.dumps({"summary": "Volt answered 504 questions, a 13% rise."})
+        s, by = mw.write(f, chat=good)
+        self.assertEqual(by, mw.MODEL); self.assertIn("504", s)
+        s, by = mw.write(f, chat=bad)
+        self.assertTrue(by.startswith("numbers only")); self.assertIn("13", by); self.assertEqual(s, mw.plain(f))
+        s, by = mw.write(f, chat=lambda m: "not json")
+        self.assertTrue(by.startswith("numbers only"))
+
+    def test_plain_report(self):
+        import munito_weekly as mw
+        t = mw.plain(self.facts())
+        self.assertIn("504 answers (week before: 480)", t); self.assertIn("1 incident(s): prompt change", t)
+        self.assertIn("2 of 30 likely have a problem", t)
+
+
 if __name__ == "__main__":
     unittest.main()
