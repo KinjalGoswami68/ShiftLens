@@ -242,7 +242,8 @@ def create_tables(timeout=CONNECT_TIMEOUT):
 
 # Every table in the public schema; each must have RLS on (CLAUDE.md).
 RLS_TABLES = ("companies", "outputs", "alerts", "schema_migrations", "investigations", "incidents", "llm_usage",
-              "bot_settings", "digests", "baseline_reviews")
+              "bot_settings", "digests", "baseline_reviews",
+              "munito_state", "munito_usage", "munito_topics", "weekly_reports")
 
 MIGRATION_LOCK_ID = 727274   # arbitrary constant for pg_advisory_xact_lock
 
@@ -380,6 +381,55 @@ MIGRATIONS = [
                body       JSONB NOT NULL
            )""",
         "ALTER TABLE baseline_reviews ENABLE ROW LEVEL SECURITY",
+    ]),
+    # Munito AI (munito.py): new optional features only. Spend is counts and dollars, never text.
+    # The new tables cascade on delete, so delete_company() needs no change. coverage_check is a
+    # separate field: spot_check (the Groq sample) is never written by Munito code.
+    (8, "m15: Munito spend ledger and state, coverage checks, topic names, weekly reports", [
+        """CREATE TABLE IF NOT EXISTS munito_state (
+               id             INTEGER PRIMARY KEY CHECK (id = 1),
+               total_usd      NUMERIC(12, 6) NOT NULL DEFAULT 0,
+               stopped_reason TEXT,
+               stopped_at     TIMESTAMPTZ,
+               paused_day     DATE,
+               paused_reason  TEXT,
+               last_error     TEXT,
+               last_error_at  TIMESTAMPTZ,
+               usage_tier     TEXT,
+               updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+           )""",
+        "ALTER TABLE munito_state ENABLE ROW LEVEL SECURITY",
+        """CREATE TABLE IF NOT EXISTS munito_usage (
+               day           DATE           NOT NULL,
+               feature       TEXT           NOT NULL,
+               model         TEXT           NOT NULL,
+               calls         INTEGER        NOT NULL DEFAULT 0,
+               input_tokens  BIGINT         NOT NULL DEFAULT 0,
+               output_tokens BIGINT         NOT NULL DEFAULT 0,
+               usd           NUMERIC(12, 6) NOT NULL DEFAULT 0,
+               PRIMARY KEY (day, feature, model)
+           )""",
+        "ALTER TABLE munito_usage ENABLE ROW LEVEL SECURITY",
+        "ALTER TABLE outputs ADD COLUMN IF NOT EXISTS coverage_check JSONB",
+        """CREATE TABLE IF NOT EXISTS munito_topics (
+               investigation_id INTEGER NOT NULL REFERENCES investigations(id) ON DELETE CASCADE,
+               cluster_id       TEXT    NOT NULL,
+               company_id       INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+               name             TEXT    NOT NULL,
+               model            TEXT    NOT NULL,
+               created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+               PRIMARY KEY (investigation_id, cluster_id)
+           )""",
+        "ALTER TABLE munito_topics ENABLE ROW LEVEL SECURITY",
+        """CREATE TABLE IF NOT EXISTS weekly_reports (
+               company_id INTEGER     NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+               week       DATE        NOT NULL,   -- Monday (IST) the reported week ends on
+               body       JSONB       NOT NULL,
+               slack_sent BOOLEAN     NOT NULL DEFAULT false,
+               created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+               PRIMARY KEY (company_id, week)
+           )""",
+        "ALTER TABLE weekly_reports ENABLE ROW LEVEL SECURITY",
     ]),
 ]
 

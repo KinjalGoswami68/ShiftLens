@@ -8,6 +8,7 @@ import IncidentDetail from "./screens/IncidentDetail";
 import BotHealth from "./screens/BotHealth";
 import Setup from "./screens/Setup";
 import TryPage from "./screens/TryPage";
+import Admin from "./screens/Admin";
 
 const BASE = import.meta.env.BASE_URL;          // "/ShiftLens/"
 
@@ -64,6 +65,7 @@ export default function App() {
 
   let screen: ReactNode;
   if (route.name === "try") screen = <TryPage />;
+  else if (route.name === "admin" && !demo) screen = <Admin />;
   else if (route.name === "setup" && !demo) screen = <Setup onSignedIn={() => bump(x => x + 1)} />;
   else if (!signedIn) screen = <SignIn onSignedIn={() => bump(x => x + 1)} />;
   else if (route.name === "incident") screen = <IncidentDetail id={route.id} key={route.id} />;

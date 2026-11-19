@@ -33,6 +33,7 @@ import spotcheck
 import review
 import digest
 import importer
+import munito    # M15: Munito AI, new optional features only (off without MUNITO_API_KEY)
 from embeddings       import embed, get_model, model_state, MODEL_NAME
 from detector         import (knn_distance, unit, baseline_stats, DistanceCUSUM, RateCUSUM,
                               is_refusal_or_empty)
@@ -1360,3 +1361,64 @@ def demo_incident_ask(incident_id: int, data: AskBody, request: Request):
 @app.get("/demo/volt/incidents/{incident_id}")
 def demo_incident_detail(incident_id: int):
     return _demo_cached(f"incident-{incident_id}", lambda: _incident_detail_for(_demo_company(), incident_id))
+
+
+# ---------------------------------------------------------------------------
+# Owner admin page (M15): Munito spend and status. Off (404) unless ADMIN_TOKEN is set in
+# Render. The token is compared in constant time and never logged; 10 wrong tokens per IP per
+# hour, then 429. Its own CORS handling for /admin/* only, so the CORS above is unchanged.
+# ---------------------------------------------------------------------------
+ADMIN_PATHS = re.compile(r"^/admin/")
+_admin_fail_limit = HourlyLimiter(10)
+
+
+@app.middleware("http")
+async def admin_cors(request: Request, call_next):
+    """Cross-origin GET/POST from the site's origins to /admin/*, with the X-Admin-Token header.
+    Added last, so it runs first, and only for /admin/* paths."""
+    origin = request.headers.get("origin")
+    if not ADMIN_PATHS.match(request.url.path) or origin not in CORS_ORIGINS:
+        return await call_next(request)
+    if request.method == "OPTIONS":
+        return Response(status_code=200, headers={
+            "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "GET, POST",
+            "Access-Control-Allow-Headers": "Content-Type, X-Admin-Token", "Access-Control-Max-Age": "600",
+            "Vary": "Origin"})
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Expose-Headers"] = "Retry-After"
+    response.headers["Vary"] = "Origin"
+    return response
+
+
+def _require_admin(request: Request, token):
+    import hmac
+    expected = os.environ.get("ADMIN_TOKEN", "").strip()
+    if not expected:
+        raise HTTPException(status_code=404, detail="Not found")
+    ip = _client_ip(request)
+    wait = _admin_fail_limit.wait(ip)
+    if wait:
+        raise HTTPException(status_code=429, detail="Too many wrong admin tokens; try later.",
+                            headers={"Retry-After": str(wait)})
+    if not token or not hmac.compare_digest(token.strip().encode(), expected.encode()):
+        _admin_fail_limit.record(ip)
+        raise HTTPException(status_code=401, detail="Wrong admin token")
+
+
+@app.get("/admin/munito")
+def admin_munito(request: Request, x_admin_token: Optional[str] = Header(None)):
+    """Munito spend (total, credit left, today) and status for the owner."""
+    _require_admin(request, x_admin_token)
+    with connection() as conn:
+        return munito.admin_view(conn)
+
+
+@app.post("/admin/munito/clear-stop")
+def admin_munito_clear_stop(request: Request, x_admin_token: Optional[str] = Header(None)):
+    """Turn Munito back on after an error stop (402, bad key, free tier). The total cap still
+    applies on every call; only raising MUNITO_TOTAL_USD_CAP in Render lifts it."""
+    _require_admin(request, x_admin_token)
+    with connection() as conn:
+        munito.clear_stop(conn)
+        return munito.admin_view(conn)

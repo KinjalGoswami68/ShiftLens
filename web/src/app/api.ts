@@ -144,7 +144,7 @@ export class ApiError extends Error {
   constructor(public status: number, message: string, public retryAfter?: number) { super(message); }
 }
 
-interface Opts { method?: "GET" | "POST"; body?: unknown; key?: string | null; onSlow?: () => void; signal?: AbortSignal; timeoutMs?: number }
+interface Opts { method?: "GET" | "POST"; body?: unknown; key?: string | null; admin?: string; onSlow?: () => void; signal?: AbortSignal; timeoutMs?: number }
 
 export async function request<T>(path: string, o: Opts = {}): Promise<T> {
   const slow = o.onSlow ? window.setTimeout(o.onSlow, COLD_START_MS) : undefined;
@@ -153,6 +153,7 @@ export async function request<T>(path: string, o: Opts = {}): Promise<T> {
   o.signal?.addEventListener("abort", () => ctl.abort());
   const headers: Record<string, string> = {};
   if (o.key) headers["X-API-Key"] = o.key;
+  if (o.admin) headers["X-Admin-Token"] = o.admin;     // owner admin page only (#/admin)
   if (o.body !== undefined) headers["Content-Type"] = "application/json";
   try {
     const r = await fetch(API_BASE + path, {

@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 //   #/                incidents     #/incidents/12   incident detail
 //   #/health          bot health    #/setup          register + first answer
 //   #/try             try without code (no key needed)
+//   #/admin           owner admin page (ADMIN_TOKEN; not in the nav)
 export type Route =
   | { name: "incidents" }
   | { name: "incident"; id: string }
   | { name: "health" }
   | { name: "setup" }
-  | { name: "try" };
+  | { name: "try" }
+  | { name: "admin" };
 
 export function parse(hash: string): Route {
   const p = hash.replace(/^#/, "").replace(/\/+$/, "") || "/";
@@ -18,6 +20,7 @@ export function parse(hash: string): Route {
   if (p === "/health") return { name: "health" };
   if (p === "/setup") return { name: "setup" };
   if (p === "/try") return { name: "try" };
+  if (p === "/admin") return { name: "admin" };
   return { name: "incidents" };
 }
 
