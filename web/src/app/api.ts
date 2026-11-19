@@ -90,6 +90,7 @@ export interface IncidentDetail {
   evidence: { flagged_examples: Example[]; baseline_examples: Example[]; items: unknown[] };
   distance_series: { threshold: number | null; points: SeriesPoint[] };
   version_timeline: VersionSpan[];
+  new_topics?: { cluster_id: string; name: string }[];      // M15: Munito topic names, optional
 }
 
 export interface Registered { company_id: number; company_name: string; api_key: string }

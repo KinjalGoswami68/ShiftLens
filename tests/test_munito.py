@@ -288,5 +288,49 @@ class Coverage(unittest.TestCase):
         self.assertIn("coverage_check", sql[0]); self.assertNotIn("spot_check", sql[0])
 
 
+class Topics(unittest.TestCase):
+    """Feature 2: names for clusters the investigation already marked as a new topic."""
+
+    def test_skipped_without_key(self):
+        import munito_topics as mt
+        with mock.patch.dict(os.environ, ALL_FLAGS):
+            os.environ.pop("MUNITO_API_KEY", None)
+            with mock.patch.object(mt.threading, "Thread", boom):
+                self.assertFalse(mt.submit(9, 12))
+            import database
+            with mock.patch.object(database, "connection", boom):
+                self.assertEqual(mt.run(9, 12), [])
+
+    def test_flag_off_with_key(self):
+        import munito_topics as mt
+        with mock.patch.dict(os.environ, {"MUNITO_API_KEY": "k", "MUNITO_TOPIC_NAMES": "0"}):
+            with mock.patch.object(mt.threading, "Thread", boom):
+                self.assertFalse(mt.submit(9, 12))
+
+    def test_only_clusters_already_marked_new_topic(self):
+        import munito_topics as mt
+        pack = {"evidence": [{"kind": "cluster", "id": "C1", "new_topic": True},
+                             {"kind": "cluster", "id": "C2", "new_topic": False},
+                             {"kind": "stat", "id": "S1"}]}
+        self.assertEqual([c["id"] for c in mt.new_topic_clusters(pack)], ["C1"])
+        self.assertEqual(mt.new_topic_clusters(None), [])
+
+    def test_name_and_clean(self):
+        import munito_topics as mt
+        seen = {}
+
+        def chat(msgs):
+            seen["msgs"] = msgs
+            return '{"topic": "  shipping to Canada. "}'
+
+        self.assertEqual(mt.name(["Do you ship to Canada?", "Customs fees for Toronto?"], chat=chat), ("Shipping to Canada", None))
+        self.assertIn("<user_text>Do you ship to Canada?</user_text>", seen["msgs"][1]["content"])
+        self.assertIsNone(mt.clean('{"topic": ""}'))
+        self.assertIsNone(mt.clean('{"topic": "' + "word " * 12 + '"}'))
+        self.assertIsNone(mt.clean("not json"))
+        self.assertIsNone(mt.clean('{"topic": "<b>x</b>"}'))
+        self.assertEqual(mt.name([], chat=chat), (None, "no example questions"))
+
+
 if __name__ == "__main__":
     unittest.main()

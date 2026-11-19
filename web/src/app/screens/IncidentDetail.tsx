@@ -116,6 +116,11 @@ export default function IncidentDetail({ id }: { id: string }) {
                   {i.flapping && ` · reopened ${i.reopen_count}×`}
                 </p>
                 {i.reasons.length > 0 && <p className="text-sm text-subtle mt-1 mb-0">Why it opened: {i.reasons.map(x => noTimes(words(x))).join("; ")}</p>}
+                {(d.new_topics ?? []).map(t => (
+                  <p key={t.cluster_id} className="text-sm mt-1 mb-0" title={`Named by an LLM from a few example questions of group ${t.cluster_id}`}>
+                    <span className="text-subtle">new topic:</span> {t.name}
+                  </p>
+                ))}
               </header>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                 <NoteCard note={d.note} />

@@ -35,6 +35,7 @@ import digest
 import importer
 import munito    # M15: Munito AI, new optional features only (off without MUNITO_API_KEY)
 import munito_coverage
+import munito_topics
 from embeddings       import embed, get_model, model_state, MODEL_NAME
 from detector         import (knn_distance, unit, baseline_stats, DistanceCUSUM, RateCUSUM,
                               is_refusal_or_empty)
@@ -935,6 +936,8 @@ def _schedule_investigation(company_id, company_name, trigger=None, incident=Non
             if INVESTIGATIONS_ENABLED:
                 start = incident["opened_at"] - timedelta(minutes=incidents.WINDOW_MINUTES) if incident else None
                 result = run_investigation(company_id, company_name, send_slack=None, trigger=trigger, start=start)
+                if result:      # M15 (Munito, off by default): name new-topic clusters, after the note
+                    munito_topics.submit(result["id"], company_id)
             if incident:
                 text = _incident_text(company_name, incident, "open", note=result["text"] if result else None)
                 sent = _notify(company_id, text)
@@ -1140,9 +1143,10 @@ def _bot_health_for(company):
         learning = get_learning(conn, company["id"]) or {}
         counts = bot_counts(conn, company["id"])
         review_body = get_baseline_review(conn, company["id"])
-        checks = munito_coverage.counts(conn, company["id"])    # M15: sampled vs full coverage, last 24 h
+        # M15: sampled vs full coverage, last 24 h; only with MUNITO_API_KEY (else the answer is as before)
+        extra = {"checks": munito_coverage.counts(conn, company["id"])} if munito.api_key() else {}
     return {"company": company["company_name"], **_learning_view(learning), **counts, "baseline_review": review_body,
-            "checks": checks}
+            **extra}
 
 
 def _incidents_for(company, limit):
@@ -1163,6 +1167,9 @@ def _incident_detail_for(company, incident_id):
         series = distance_series(conn, company["id"], start, end)
         versions = version_timeline(conn, company["id"])
         learning = get_learning(conn, company["id"]) or {}
+        # M15: topic names, only with MUNITO_API_KEY (else the answer is as before)
+        extra = ({"new_topics": munito_topics.names(conn, (inc.get("investigation") or {}).get("id"))}
+                 if munito.api_key() else {})
     inv = inc.pop("investigation")
     stored = (inv or {}).get("report") or {}
     pack = stored.get("pack") or {}
@@ -1179,6 +1186,7 @@ def _incident_detail_for(company, incident_id):
                      "items": pack.get("evidence", [])},
         "distance_series": {"threshold": learning.get("threshold"), "points": series},
         "version_timeline": versions,
+        **extra,
     }
 
 
