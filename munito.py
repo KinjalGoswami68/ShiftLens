@@ -64,6 +64,7 @@ FEATURES = {
 CHARS_PER_TOKEN = 3.0      # English is ~4 characters per token; 3 over-estimates on purpose
 TOKENS_PER_MESSAGE = 8     # chat template overhead per message, also over-estimated
 MAX_OUTPUT_CAP = 1200      # no call may ask for more output than this
+NOT_SENT_ERRORS = ("SSLError", "ConnectTimeout")    # requests exceptions raised before anything is sent
 
 
 class Skipped(Exception):
@@ -316,8 +317,12 @@ def chat(feature, model, messages, max_tokens, schema=None, schema_name="out", t
     try:
         r = post(f"{BASE_URL}/chat/completions", json=body, headers=headers, timeout=timeout)
     except Exception as e:
-        # The request may have run and been billed: keep the booked estimate.
         with db() as conn:
+            # TLS or connect failures happen before the request is sent: nothing was billed.
+            # Anything later (a read timeout, a dropped answer) may have run and been billed:
+            # keep the booked estimate.
+            if type(e).__name__ in NOT_SENT_ERRORS:
+                settle(conn, feature, model, est, 0.0)
             record_error(conn, None, f"{feature}: {type(e).__name__}")
         raise Unavailable(type(e).__name__)
 

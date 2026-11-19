@@ -97,6 +97,33 @@ function DigestCard() {
   );
 }
 
+/** Sampled spot-checks vs full-coverage checks (Munito, optional), counted separately. */
+function ChecksCard({ c }: { c: NonNullable<Health["checks"]> }) {
+  const s = c.sampled, f = c.full_coverage;
+  if (!s.checked && !f.on && !f.checked) return null;
+  const col = (title: string, sub: string, x: { checked: number; likely_problems: number; partly_supported: number }) => (
+    <div>
+      <div className="text-sm text-text">{title}</div>
+      <div className="text-xs text-subtle mb-2">{sub}</div>
+      <p className="m-0 text-sm text-muted">
+        <span className="num text-text">{x.checked}</span> checked ·{" "}
+        <span className={`num ${x.likely_problems ? "text-bad" : "text-text"}`}>{x.likely_problems}</span> likely problem{x.likely_problems === 1 ? "" : "s"}
+        {x.partly_supported > 0 && <> · <span className="num">{x.partly_supported}</span> partly supported (a note, not a problem)</>}
+      </p>
+    </div>
+  );
+  return (
+    <Card title={`Answer checks, last ${c.hours} h`}>
+      <div className="grid gap-5 sm:grid-cols-2">
+        {col("Sampled", "A fixed sample of answers, checked on Groq", s)}
+        {f.on || f.checked
+          ? col("Full coverage", "Answers with context the sample did not pick, checked on Munito", f)
+          : <div><div className="text-sm text-text">Full coverage</div><div className="text-xs text-subtle">Off</div></div>}
+      </div>
+    </Card>
+  );
+}
+
 export default function BotHealth() {
   const q = useApi<Health>(paths.health());
   useEffect(() => { const t = setInterval(() => q.reload(true), 60_000); return () => clearInterval(t); }, [q.reload]);
@@ -119,6 +146,7 @@ export default function BotHealth() {
             </Card>
             {h.baseline_review && <ReviewCard r={h.baseline_review} />}
             <DigestCard />
+            {h.checks && <ChecksCard c={h.checks} />}
             {!isDemo() && h.slack && <SlackCard slack={h.slack} onChange={() => q.reload(true)} />}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatTile label="Threshold (distance from normal)"

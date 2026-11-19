@@ -34,6 +34,7 @@ import review
 import digest
 import importer
 import munito    # M15: Munito AI, new optional features only (off without MUNITO_API_KEY)
+import munito_coverage
 from embeddings       import embed, get_model, model_state, MODEL_NAME
 from detector         import (knn_distance, unit, baseline_stats, DistanceCUSUM, RateCUSUM,
                               is_refusal_or_empty)
@@ -836,6 +837,10 @@ def ingest(
     # context (RAG documents) goes only into that in-memory queue and is never stored.
     if output_id is not None and spotcheck.sampled(company_id, meta["request_id"] or output_id):
         spotcheck.submit(output_id, company_id, prompt, response, data.context)
+    # M15 (Munito, off unless MUNITO_API_KEY and MUNITO_FULL_COVERAGE=1): answers with context
+    # that the sample above did NOT pick; stored in coverage_check, never in spot_check.
+    if output_id is not None and munito_coverage.wanted(company_id, meta["request_id"] or output_id, data.context):
+        munito_coverage.submit(output_id, company_id, prompt, response, data.context)
 
     for action in incident_msgs:
         if action == "open" and ready:
@@ -1135,7 +1140,9 @@ def _bot_health_for(company):
         learning = get_learning(conn, company["id"]) or {}
         counts = bot_counts(conn, company["id"])
         review_body = get_baseline_review(conn, company["id"])
-    return {"company": company["company_name"], **_learning_view(learning), **counts, "baseline_review": review_body}
+        checks = munito_coverage.counts(conn, company["id"])    # M15: sampled vs full coverage, last 24 h
+    return {"company": company["company_name"], **_learning_view(learning), **counts, "baseline_review": review_body,
+            "checks": checks}
 
 
 def _incidents_for(company, limit):

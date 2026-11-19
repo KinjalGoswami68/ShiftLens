@@ -20,6 +20,9 @@ export interface BotHealth {
   last_answer_at: string | null;
   open_incidents: number;
   slack?: { connected: boolean; ends_with: string | null };
+  checks?: { hours: number;
+    sampled: { checked: number; likely_problems: number; partly_supported: number };
+    full_coverage: { on: boolean; checked: number; likely_problems: number; partly_supported: number } };
   baseline_review?: null | { created_at: string; answers: number; verdict: "looks fine" | "check these";
     issues: { category: string; count: number; share: number; examples: string[]; text: string }[];
     spot_checks: { checked: number; likely_problems: number; partly_supported?: number } };

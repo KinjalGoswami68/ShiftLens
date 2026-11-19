@@ -197,11 +197,95 @@ class Chat(unittest.TestCase):
             munito.chat("weekly", "deepseek-ai/deepseek-v4.1-flash-1017", MSGS, 400, post=post, db=fake_db)
         self.assertNotIn("settle", [c[0] for c in self.calls])          # booked estimate stays
 
+    def test_tls_failure_was_never_sent_so_it_is_refunded(self):
+        class SSLError(Exception):
+            pass
+
+        def post(*a, **k):
+            raise SSLError("unable to get local issuer certificate")
+        with self.assertRaises(munito.Unavailable):
+            munito.chat("coverage", QWEN, MSGS, 300, post=post, db=fake_db)
+        settle = next(c for c in self.calls if c[0] == "settle")[1]
+        self.assertEqual(settle[3], 0.0)
+
     def test_cut_output_is_unavailable_but_paid(self):
         post = lambda *a, **k: Resp(200, ok_body(content=None, tout=300, finish="length"))
         with self.assertRaises(munito.Unavailable):
             munito.chat("topics", "deepseek-ai/deepseek-v4.1-flash-1017", MSGS, 300, post=post, db=fake_db)
         self.assertIn("settle", [c[0] for c in self.calls])
+
+
+class Coverage(unittest.TestCase):
+    """Feature 1: answers with context the sample did not pick; same prompt and labels."""
+
+    def keys(self):
+        import spotcheck
+        picked = next(f"r{i}" for i in range(1000) if spotcheck.sampled(5, f"r{i}"))
+        unpicked = next(f"r{i}" for i in range(1000) if not spotcheck.sampled(5, f"r{i}"))
+        return picked, unpicked
+
+    def test_skipped_without_key(self):
+        import munito_coverage as mc
+        picked, unpicked = self.keys()
+        with mock.patch.dict(os.environ, ALL_FLAGS):
+            os.environ.pop("MUNITO_API_KEY", None)
+            self.assertFalse(mc.wanted(5, unpicked, "Returns within 30 days."))
+            with mock.patch.object(mc.threading, "Thread", boom):
+                self.assertFalse(mc.submit(1, 5, "q", "a", "ctx"))
+
+    def test_only_unpicked_answers_with_context(self):
+        import munito_coverage as mc
+        picked, unpicked = self.keys()
+        with mock.patch.dict(os.environ, {**ALL_FLAGS, "MUNITO_API_KEY": "k"}):
+            self.assertTrue(mc.wanted(5, unpicked, "Returns within 30 days."))
+            self.assertFalse(mc.wanted(5, picked, "Returns within 30 days."))     # the sample stays Groq-only
+            self.assertFalse(mc.wanted(5, unpicked, None))
+            self.assertFalse(mc.wanted(5, unpicked, "   "))
+            os.environ["MUNITO_FULL_COVERAGE"] = "0"
+            self.assertFalse(mc.wanted(5, unpicked, "Returns within 30 days."))
+
+    def test_same_prompt_schema_and_labels_as_the_sample(self):
+        import munito_coverage as mc
+        import spotcheck
+        seen = {}
+
+        def chat(model, msgs):
+            seen.update(model=model, msgs=msgs)
+            return json.dumps({"verdict": "not_supported", "reason": "60 days, not 30", "quote": "60 days"}), 120
+
+        r, why = mc.check("Return window?", "You have 60 days.", "Returns within 30 days.", chat=chat)
+        self.assertEqual(seen["msgs"], spotcheck.messages("Return window?", "You have 60 days.", "Returns within 30 days.")[1])
+        self.assertEqual(seen["model"], "qwen/qwen3.8-27b")
+        self.assertEqual((r["verdict"], r["likely_problem"], r["source"]), ("not_supported", True, "munito_full_coverage"))
+        self.assertEqual(r["quote"], "60 days")
+
+    def test_munito_adapter_uses_the_spotcheck_schema(self):
+        import munito_coverage as mc
+        import spotcheck
+        got = {}
+
+        def fake_chat(feature, model, msgs, max_tokens, schema=None, schema_name=None, **k):
+            got.update(feature=feature, schema=schema, max_tokens=max_tokens)
+            return '{"verdict": "supported", "reason": "ok", "quote": ""}', {"input_tokens": 100, "output_tokens": 30}
+
+        with mock.patch.object(munito, "chat", fake_chat):
+            text, tokens = mc.munito_json("qwen/qwen3.8-27b", [])
+        self.assertEqual((got["feature"], got["schema"], got["max_tokens"], tokens), ("coverage", spotcheck.SCHEMA, 300, 130))
+
+    def test_save_writes_coverage_check_only(self):
+        import munito_coverage as mc
+        sql = []
+
+        class Cur:
+            def execute(self, q, args=None):
+                sql.append(q)
+
+        class Conn:
+            def cursor(self):
+                return Cur()
+
+        mc.save(Conn(), 7, {"verdict": "supported"})
+        self.assertIn("coverage_check", sql[0]); self.assertNotIn("spot_check", sql[0])
 
 
 if __name__ == "__main__":
