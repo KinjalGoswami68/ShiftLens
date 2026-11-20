@@ -147,7 +147,8 @@ Render or Actions, and never add `truststore` to `requirements.txt`.
   creates it, and Security Advisor must show no RLS warnings afterwards.
 
 ## Rs 0 rule (overrides everything)
-- Every API, model, host, library, database and CI minute must be free.
+- Every API, model, host, library, database and CI minute must be free. (One owner-approved
+  exception: the existing Munito AI prepaid credit, capped; see "Munito AI" below.)
 - Never add a payment method anywhere, not even "for verification". If a service asks for a card: stop and find a free alternative.
 - Never suggest a paid plan upgrade. If something needs one, say so and redesign.
 - Open-weight models or free tiers only (Groq free: `openai/gpt-oss-120b` / `openai/gpt-oss-20b`). No paid OpenAI/Anthropic/Google APIs.
@@ -177,6 +178,36 @@ Render or Actions, and never add `truststore` to `requirements.txt`.
   tokens/day as investigations. On a generation day either set `INVESTIGATION_DAILY_CAP`
   (Render -> Environment, default 20) low enough that both fit, or generate on a day with no
   demo incidents. Generators must sleep between calls to stay under 8K tokens/min.
+
+## Munito AI (M15, decided 2026-11-19)
+- The one paid-credit exception: the owner's existing $100 of Munito AI prepaid credits
+  (OpenAI-compatible, `https://api.munito.ai/inference/v1`). No card, no auto top-up, no paid
+  plan, ever; never suggest them. Usage tier: Tier 1 (seen in `x-ratelimit-*`, 2026-11-19).
+- NEW features only. Investigations (Groq gpt-oss-120b), questions/tries (gpt-oss-20b) and the
+  sampled spot-checks (qwen on Groq) never call Munito and keep their prompts, caps and behaviour.
+  Without `MUNITO_API_KEY` ShiftLens behaves exactly as before (tests/test_munito*.py).
+- Every call goes through `munito.chat()`: flex tier (`munito-service-tier: flex`), reasoning off,
+  `max_tokens` on every call (capped at 1200), cost estimated BEFORE the call (characters / 3 +
+  max output, at the posted price) and skipped if it would cross `MUNITO_DAILY_USD` (default 1.00,
+  UTC day) or `MUNITO_TOTAL_USD_CAP` (default 90, permanent stop; only the owner raises it in
+  Render). The estimate is booked in Postgres (`munito_state`, `munito_usage`) and corrected
+  from the token counts, so restarts cannot reset the total. 402 / 401 / inactive account /
+  `free_daily_limit_exceeded` stop every Munito feature (admin page shows why; clear there);
+  a Munito-side spend limit pauses them until the next UTC day.
+- Features, each off unless its env var is `1` (and the key is set):
+  | Env | What | Model (flex, reasoning off) |
+  |---|---|---|
+  | `MUNITO_FULL_COVERAGE` | answers with context the sample did not pick, same prompt/labels, `outputs.coverage_check` | qwen/qwen3.8-27b, 300 out |
+  | `MUNITO_TOPIC_NAMES` | names clusters the investigation marked new topic, `munito_topics` | deepseek-v4.1-flash-1017, 60 out |
+  | `MUNITO_WEEKLY_REPORT` | one summary per bot per IST week, Mon 20:40 IST, bot's own Slack only | deepseek-v4.1-flash-1017, 400 out |
+- Prices in `munito.PRICES` (docs.munito.ai/models, posted 2026-11-17); re-check before relying
+  on them. Tier 1 per-minute limits: qwen 30 req / 60K in / 8K out; deepseek-v4.1 400 / 800K /
+  120K; deepseek-v4-flash 100 / 200K / 25K.
+- Owner admin page: `#/admin` + `GET /admin/munito` with `ADMIN_TOKEN` (Render env). Spend
+  counts ShiftLens's calls only; other keys in the same Munito organization share the balance.
+- Scorecards spend from the same ledger: `scripts/munito_agreement.py`,
+  `scripts/munito_scorecard.py` (`docs/SCORECARD_MUNITO.md`). Run locally with
+  `SHIFTLENS_DEV_TRUSTSTORE=1` (Avast).
 
 ## Secrets
 - Secrets live only in environment variables (`.env` locally, Render -> Environment in production).

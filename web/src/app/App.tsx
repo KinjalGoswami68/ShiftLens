@@ -110,6 +110,7 @@ export default function App() {
       <footer className="border-t border-line">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-subtle">
           <a href={REPO_URL} className="text-subtle hover:text-text">GitHub</a>
+          <a href={`${BASE}privacy/`} className="text-subtle hover:text-text">Privacy</a>
           <span>MIT licence</span>
         </div>
       </footer>

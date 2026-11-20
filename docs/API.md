@@ -125,6 +125,11 @@ Also `slack` (`{"connected", "ends_with"}`) and `baseline_review` (null until th
 note (also `spot_partly` on a digest), never in Slack.
 When a bot becomes ready, the answers it learned from are checked once (day-1 checks plus up to 5
 spot-checks) so a bad start is not silently learned as normal.
+Only when the server has `MUNITO_API_KEY` (M15, optional; otherwise these fields are absent):
+`checks` `{"hours": 24, "sampled": {"checked", "likely_problems", "partly_supported"},
+"full_coverage": {"on", "checked", "likely_problems", "partly_supported"}}` (the Groq sample and the
+Munito full-coverage checks, counted apart) and `weekly` (null, or the newest weekly report
+`{"week", "period", "summary", "written_by" (model | "numbers only (...)"), "slack_sent"}`).
 
 ### GET /bot/digests?limit=7  (auth)  ·  GET /demo/volt/digests  (no key)
 `{"company", "digests": [{"day", "lines" [str], "summary", "slack_sent"}]}`, newest first. One
@@ -151,8 +156,21 @@ evidence          {flagged_examples [{request_id, prompt, response, flagged, pro
 distance_series   {threshold, points [{t, request_id, distance, flagged, nonanswer,
                    prompt_version, model_version}]}   from 2 h before opening to 30 min after closing
 version_timeline  [{field, value, first_seen, last_seen, answers}]   last 30 days
+new_topics        [{cluster_id, name}]   only with MUNITO_API_KEY (M15): names of the clusters the
+                   investigation marked as a new topic; empty until named
 ```
 Example texts in `evidence` are end-user and bot text: render them as text, never as HTML.
+
+## Owner admin (M15)
+
+### GET /admin/munito  ·  POST /admin/munito/clear-stop  (header `X-Admin-Token`)
+Off (404) unless `ADMIN_TOKEN` is set on the server; a wrong token is 401, and 10 wrong tokens
+per IP per hour give 429. Returns Munito spend and status: `key_set`, `status` (active | paused
+| stopped | off), `status_reason`, `features` [{feature, env, on}], `total_spent_usd`,
+`credit_usd`, `credit_left_usd`, `today_usd`, `daily_cap_usd`, `total_cap_usd`, `usage_tier`,
+`last_error`, `stopped_reason`, `by_feature_today`, `by_feature_model_total`, `note`. Spend
+counts ShiftLens's own calls only. `clear-stop` turns Munito back on after an error stop (402,
+bad key, free tier); the total cap still applies. Cross-origin from the site's origins only.
 
 ### GET /health  (no auth)
 Liveness for Render and the pinger: `status`, `database`, `commit`, `started_at`,

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <script>%THEME_BOOT%</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0A0A0B" />
+    <title>Privacy · %PRODUCT_NAME%</title>
+    <meta name="description" content="What ShiftLens stores, what it sends to which service, and how to delete it." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23C9CDD3' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23C9CDD3'/%3E%3C/svg%3E" />
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 bg-raised px-3 py-2 rounded-md">Skip to content</a>
+    <header class="border-b border-line">
+      <div class="max-w-[760px] mx-auto px-4 sm:px-8 h-16 flex items-center gap-3">
+        <a href="../" class="inline-flex items-center gap-2.5 font-display font-semibold text-[15px] tracking-tight no-underline text-text">%PRODUCT_NAME%</a>
+        <div id="theme-controls" class="ml-auto"></div>
+      </div>
+    </header>
+    <main id="main" class="flex-1 w-full max-w-[760px] mx-auto px-4 sm:px-8 py-10 sm:py-14 privacy">
+      <h1 class="m-0 text-[clamp(30px,3.4vw,40px)] leading-[1.08] tracking-[-.035em]">Privacy</h1>
+      <p class="text-muted">What ShiftLens stores about your bot, what it sends to other services, and how to delete it.</p>
+
+      <h2>What is stored</h2>
+      <ul>
+        <li>Each answer your bot sends: the question, the answer, two embeddings computed on our own server, and the optional fields you send (request id, prompt and model version, status, latency). A session id is stored only as a hash.</li>
+        <li>What ShiftLens works out from them: flags, incidents, investigation notes, check verdicts, daily digests and weekly reports.</li>
+        <li>Your bot's name, its API key as a hash (the key itself is shown once and never stored), and its Slack webhook if you add one (never shown again or logged).</li>
+        <li>Never stored: the context (documents) you pass to <code>track(context=...)</code>, the text of questions you ask about an incident, and anything you paste into "Try without code".</li>
+      </ul>
+
+      <h2>Where</h2>
+      <p>The API runs on Render and the database on Supabase, both in Singapore. This site is static and served by Cloudflare Pages and GitHub Pages; it uses no cookies and no analytics. Your API key and theme are kept in your browser's local storage.</p>
+
+      <h2>What is sent to other services</h2>
+      <ul>
+        <li><b>Groq</b> (open-weight models): example questions and answers for an incident's investigation note; for a sampled share of answers, the question, the answer and its context for a spot-check; questions you ask about an incident; and the answers you paste into "Try without code".</li>
+        <li><b>Munito AI</b>, only when these extra checks are turned on: full-coverage checks send the question, the answer and its context; topic names send a few example questions; weekly reports send the week's numbers and the bot's name. Munito AI says it keeps no prompts or outputs and does not train on them.</li>
+        <li><b>Slack</b>: incident messages, digests and weekly reports, only to webhooks you or the site owner set.</li>
+      </ul>
+
+      <h2>Deleting</h2>
+      <p><code>DELETE /company</code> with your API key deletes your bot and everything stored for it (see <a href="%REPO_URL%/blob/main/docs/API.md">the API docs</a>). A bot that sends no answers is deleted automatically 7 days after it registers.</p>
+    </main>
+    <footer class="border-t border-line">
+      <div class="max-w-[760px] mx-auto px-4 sm:px-8 py-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-subtle">
+        <a href="../" class="text-subtle hover:text-text">Home</a>
+        <a href="%REPO_URL%" class="text-subtle hover:text-text">GitHub</a>
+        <span>MIT licence</span>
+      </div>
+    </footer>
+    <script type="module" src="/src/privacy.ts"></script>
+  </body>
+</html>
