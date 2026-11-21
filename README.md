@@ -80,6 +80,10 @@ The detector needs a baseline, but some problems don't:
   ("12% of them are refusals. Intended?"), so a bad start isn't silently learned as normal.
 - **Daily digest** at 20:30 IST, and **your own Slack channel** per bot (`POST /bot/slack`).
   Without one, a bot is dashboard-only.
+- **Optional extra checks (off by default):** full-coverage checks of every answer sent with
+  context, names for new question topics, and a weekly plain-language report, on open models at
+  Munito AI, within a hard daily and total budget. Nothing changes when they are off. See
+  [docs/SCORECARD_MUNITO.md](docs/SCORECARD_MUNITO.md) and the [privacy page](https://shiftlens.pages.dev/privacy/).
 - **Import history:** `shiftlens.import_history(pairs)` builds the baseline from past logs (300
   a day) instead of waiting for traffic.
 

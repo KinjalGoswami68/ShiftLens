@@ -12,6 +12,7 @@ test_api_key.txt
 build/
 *.egg-info/
 fixtures/m10/_ledger.json
+fixtures/m10/_munito_results.json
 
 # M11 static site (web/)
 web/node_modules/
