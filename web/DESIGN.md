@@ -55,13 +55,15 @@ All three are free (SIL OFL) and self-hosted as latin woff2 in the real sites.
 
 | Effect | Where | Rule |
 |---|---|---|
-| Liquid chrome background (WebGL, one fragment shader, 0.4x resolution) | landing page | starts on the first mouse movement (never at load), renders only while the pointer moves, then stops. Never on touch, reduced motion or software WebGL (SwiftShader, llvmpipe): static gradient instead. |
+| Liquid chrome background (WebGL, one fragment shader, fixed behind the whole page) | landing page | starts on the first mouse movement, touch or scroll (never at load); ripples follow the pointer and touches, scrolling stirs and drifts the field; keeps flowing 4 s after the last input, then stops; stops while the tab is hidden. Desktop 0.4x resolution; phones DPR capped at 1, 0.32x, at most 30 fps. Output clamped (dark <= 0.155, light >= 0.83) so text on the bare background stays AA. Never on reduced motion or software WebGL (SwiftShader, llvmpipe): static gradient instead. |
 | Edge light on panels | stat tiles, feature cards (hover) | border-only highlight under the pointer |
 | Magnetic pull + springy press | the one primary CTA per screen | skill preset: at most 1-2 per screen |
 | Click pulse | buttons | 0.6 s ring in the accent colour |
 | ASCII cursor (`+`, becomes a ring with `[open]` / `[press]` / `[drag]` / `[zoom]`) | landing page only, fine pointers only (the app keeps the normal cursor) | native cursor kept for text fields |
 | ASCII decode of the brand word | landing hero, once, mouse/trackpad only | 0.7 s in plain colour, chrome applied at the end; the real text is in the page from the start, so it is not a preloader blocking content |
-| Chrome brand word (gradient clipped to text) | landing hero, screens >= 900 px | below 900 px solid silver: in software rendering the clipped gradient cost ~1 s of blocking time on Lighthouse mobile |
+| Chrome brand word (gradient clipped to text) | landing hero, screens >= 900 px | below 900 px solid bright silver with a darker lower half (a static clipped copy: a chrome horizon); in software rendering the clipped gradient cost ~1 s of blocking time on Lighthouse mobile |
+| Shine sweep (compositor-only: a window and the text copy inside it move in opposite directions, transform only) | landing: brand word, logo mark, primary button; 7 s cycle, staggered | paused while the hero is off screen; hidden under reduced motion. Measured 2026-11-22: 0 paints / 0 layouts in 4 s of sweeping |
+| Tap pulse (press + fading ring, `scale`/`transform`/`opacity`) | landing buttons and cards, touch only | |
 | Scroll reveals (rise + fade, staggered 70 ms) | landing sections; app: first load of a screen only | once per element |
 | Pinned scroll sequence (GSAP + ScrollTrigger) | landing page | as now |
 | ASCII spinner (braille frames) | loading / waking-up states | |

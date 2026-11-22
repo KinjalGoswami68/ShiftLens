@@ -9,19 +9,33 @@ mountThemeControls(document.getElementById("theme-controls")!, { dock: true });
 trackPointer();
 trackSurfaces();
 
-// ---- background: WebGL on mouse/trackpad devices, after load; static gradient otherwise ----
+// ---- background: WebGL behind the whole page, after the first interaction; static gradient otherwise ----
 const canvas = document.getElementById("liquid") as HTMLCanvasElement;
 const staticBg = () => { canvas.style.background = "radial-gradient(1200px 700px at 72% 18%, var(--bg-hi), var(--t-bg))"; };
 staticBg();
-if (fine && !reduced) {
-  // Start the shader on the first real mouse movement (never at load), so it costs nothing
-  // for visitors who only scroll, and the static gradient stays where WebGL is slow or missing.
+if (!reduced) {
+  // Start the shader on the first mouse movement, touch or scroll (never at load), so a visit
+  // with no interaction costs nothing, and the static gradient stays where WebGL is slow or missing.
+  const evs = ["pointermove", "pointerdown", "touchstart", "scroll"] as const;
   const start = () => {
-    removeEventListener("pointermove", start);
-    import("./liquid").then(m => { if (m.startLiquid(canvas, true)) canvas.style.background = ""; });
+    evs.forEach(ev => removeEventListener(ev, start));
+    import("./liquid").then(m => { if (m.startLiquid(canvas, !fine)) canvas.style.background = ""; });
   };
-  addEventListener("pointermove", start, { passive: true });
+  evs.forEach(ev => addEventListener(ev, start, { passive: true }));
 }
+
+// ---- tap pulse on phones: a light ring + press on buttons and cards (transform/opacity only) ----
+if (!fine && !reduced) addEventListener("pointerdown", e => {
+  if (e.pointerType !== "touch") return;
+  const el = (e.target as Element).closest?.(".btn, .panel") as HTMLElement | null;
+  if (!el) return;
+  el.classList.remove("tap"); void el.offsetWidth; el.classList.add("tap");
+  setTimeout(() => el.classList.remove("tap"), 600);
+}, { passive: true });
+
+// ---- shine sweep: pause while the hero is off screen ----
+const hero = document.getElementById("hero");
+if (hero && !reduced) new IntersectionObserver(([e]) => hero.classList.toggle("shine-off", !e.isIntersecting)).observe(hero);
 
 // ---- ASCII cursor (landing only, fine pointers) ----
 if (fine) {
@@ -61,7 +75,7 @@ if (fine && !reduced) document.querySelectorAll<HTMLElement>(".magnetic").forEac
 // Mouse/trackpad only (skipped on touch and reduced motion), decoded in plain colour: a gradient
 // clipped to 184 px text is costly to rasterise, so the chrome is applied once, at the end.
 const brand = document.getElementById("brand")!;
-if (!reduced && fine) {
+if (!reduced && fine && matchMedia("(min-width: 900px)").matches) {
   const final = brand.dataset.text ?? brand.textContent ?? "", glyphs = "#%&*+=-:./|<>[]01", t0 = performance.now();
   const dec = (now: number) => {
     const p = Math.min(1, (now - t0) / 700), n = Math.floor(p * final.length);

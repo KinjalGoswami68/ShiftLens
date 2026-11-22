@@ -20,7 +20,7 @@
     <header class="sticky top-0 z-40" style="background: linear-gradient(var(--t-bg) 55%, transparent)">
       <div class="max-w-[1160px] mx-auto px-4 sm:px-8 h-16 flex items-center gap-3">
         <a href="./" class="inline-flex items-center gap-2.5 font-display font-semibold text-[15px] tracking-tight no-underline text-text">
-          <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true" class="mark"><defs><linearGradient id="mk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="mk1"/><stop offset=".45" class="mk2"/><stop offset=".5" class="mk3"/><stop offset="1" class="mk4"/></linearGradient></defs><circle cx="16" cy="16" r="13" fill="none" stroke="url(#mk)" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="url(#mk)"/><path d="M16 3v5M16 24v5M3 16h5M24 16h5" stroke="url(#mk)" stroke-width="2"/></svg>
+          <span class="mark-wrap" aria-hidden="true"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true" class="mark"><defs><linearGradient id="mk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="mk1"/><stop offset=".45" class="mk2"/><stop offset=".5" class="mk3"/><stop offset="1" class="mk4"/></linearGradient></defs><circle cx="16" cy="16" r="13" fill="none" stroke="url(#mk)" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="url(#mk)"/><path d="M16 3v5M16 24v5M3 16h5M24 16h5" stroke="url(#mk)" stroke-width="2"/></svg><span class="mark-shine"><i></i></span></span>
           %PRODUCT_NAME%
         </a>
         <nav aria-label="Main" class="ml-auto flex items-center gap-1 text-sm">
@@ -33,9 +33,9 @@
 
     <main id="main">
       <!-- 1. Hero -->
-      <section class="relative max-w-[1160px] mx-auto px-4 sm:px-8 pt-14 sm:pt-20 pb-16 sm:pb-24 min-h-[78svh] flex flex-col justify-center">
+      <section id="hero" class="relative max-w-[1160px] mx-auto px-4 sm:px-8 pt-14 sm:pt-20 pb-16 sm:pb-24 min-h-[78svh] flex flex-col justify-center">
         <p class="m-0 font-mono text-xs uppercase tracking-[.14em] text-muted inline-flex items-center gap-2.5"><i class="size-[7px] rounded-full bg-ok" style="box-shadow:0 0 0 3px var(--color-ok-tint)" aria-hidden="true"></i>monitoring for chatbots</p>
-        <p class="m-0 mt-5 font-display font-bold leading-[.86] tracking-[-.055em] text-[clamp(46px,14.5vw,184px)]" aria-hidden="true"><span class="chrome-text" id="brand" data-text="%PRODUCT_NAME%">%PRODUCT_NAME%</span></p>
+        <p class="m-0 mt-5 font-display font-bold leading-[.86] tracking-[-.055em] text-[clamp(46px,14.5vw,184px)]" aria-hidden="true"><span class="brand-wrap" data-text="%PRODUCT_NAME%"><span class="chrome-text" id="brand" data-text="%PRODUCT_NAME%">%PRODUCT_NAME%</span><span class="sweep"><i>%PRODUCT_NAME%</i></span></span></p>
         <h1 class="m-0 mt-7 font-display font-medium text-[clamp(24px,2.8vw,34px)] leading-[1.18] tracking-[-.02em] max-w-[22ch]">%TAGLINE%</h1>
         <p class="m-0 mt-5 text-md text-muted max-w-[58ch] leading-[26px]">It watches every answer, learns what normal looks like, and when it drifts sends one Slack message with what changed, probably why, and the requests that prove it.</p>
         <div class="flex flex-wrap gap-3 mt-9">
