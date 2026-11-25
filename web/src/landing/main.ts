@@ -2,7 +2,7 @@ import "../styles.css";
 import "@fontsource/instrument-serif/latin-400.css";
 import "@fontsource/instrument-serif/latin-400-italic.css";
 import "./landing.css";
-import { day, load, snapshotScene, type Scene } from "./data";
+import { load, snapshotScene, type Scene } from "./data";
 import { createStage, type Stage } from "./inspector";
 
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -12,9 +12,6 @@ const fine = matchMedia("(pointer: fine)").matches;
 // ---- readouts: one dataset (live demo or the recorded incident) drives all of them ----
 function fill(sc: Scene) {
   const d = sc.d, set = (k: string, v: string) => document.querySelectorAll<HTMLElement>(`[data-ro="${k}"]`).forEach(el => { el.textContent = v; });
-  set("source", d.source === "live" ? "live" : `recorded ${day(d.captured_at ?? d.incident.opened_at)}`);
-  document.querySelector('[data-ro="dot"]')?.classList.toggle("live", d.source === "live");
-  set("company", d.company.toLowerCase());
   set("threshold", d.distance_series.threshold?.toFixed(3) ?? "–");
   set("incident", `#${d.incident.id}`);
   set("cause", d.note!.cause);

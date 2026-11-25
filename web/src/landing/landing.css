@@ -25,7 +25,7 @@ body { overflow-x: clip; }
 @media (max-width: 639px) { .hide-sm { display: none !important; } }
 
 /* text links: plain, underlined, silver */
-.tl { color: var(--t-text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; text-decoration-color: rgba(255, 255, 255, .45);
+.tl { white-space: nowrap; color: var(--t-text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; text-decoration-color: rgba(255, 255, 255, .45);
   transition: text-decoration-color .2s; }
 .tl:hover { text-decoration-color: var(--t-text); }
 
@@ -50,16 +50,15 @@ body { overflow-x: clip; }
 .hero { position: relative; min-height: 100svh; margin-top: -60px; padding: 0 var(--pad) 84px; display: flex; flex-direction: column; justify-content: flex-end; }
 .ro { position: absolute; margin: 0; white-space: nowrap; background: rgba(7, 8, 10, .72); padding: 2px 5px; }
 .ro b { color: var(--t-text); font-weight: 400; }
-.ro-tl { left: calc(var(--pad) - 5px); top: 96px; } .ro-tr { right: calc(var(--pad) - 5px); top: 96px; }
-.ro-bl { left: calc(var(--pad) - 5px); bottom: 26px; } .ro-br { right: calc(var(--pad) - 5px); bottom: 26px; }
-.dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--t-subtle); margin-right: 8px; vertical-align: 1px; }
-.dot.live { background: var(--t-ok); }
+.ro-tr { right: calc(var(--pad) - 5px); top: 96px; }
+.ro-br { right: calc(var(--pad) - 5px); bottom: 26px; }
 .hero-bottom { container-type: inline-size; position: relative; z-index: 2; }
 /* the wordmark fills the width: "ShiftLens" is ~4.05 em wide at this tracking (measured), plus the end padding */
 .wordmark { margin: 0 0 0 -.03em; font: 700 min(calc(100cqw / 4.06), 360px)/.8 var(--font-display); letter-spacing: -.062em; white-space: nowrap; }
 .hero-under { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; align-items: end; margin-top: 36px; }
 .hero-under h1 { grid-column: 1 / 8; margin: 0; font: 500 clamp(22px, 2vw, 28px)/1.2 var(--font-display); letter-spacing: -.02em; }
-.hero-under .links { grid-column: 9 / 13; margin: 0; display: flex; gap: 28px; justify-content: flex-end; font-size: 15px; }
+/* each link (text + arrow) stays on one line (.tl is nowrap); when the column is too narrow the links wrap as whole items */
+.hero-under .links { grid-column: 9 / 13; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: flex-end; font-size: 15px; }
 @media (max-width: 639px) {
   .wordmark { font-size: calc(100cqw / 2.08); margin-left: -.02em; }
   .wordmark .brand-wrap { display: block; width: max-content; }

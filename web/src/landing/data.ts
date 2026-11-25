@@ -49,7 +49,7 @@ async function getJSON<T>(path: string, ms: number): Promise<T> {
 
 // "12 nov" in IST, by arithmetic: the first time-zone-aware Intl format costs ~100+ ms (ICU data) at load.
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-export const day = (iso: string) => { const d = new Date(Date.parse(iso) + 330 * 60_000); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
+const day = (iso: string) => { const d = new Date(Date.parse(iso) + 330 * 60_000); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
 
 /** The version that appeared last before the incident opened and after the first point. */
 function newVersion(d: Data, p: Point[]): Version | null {
