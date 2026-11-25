@@ -2,9 +2,10 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
-    <script>%THEME_BOOT%</script>
+    <!-- The landing page is dark only (near-black and silver); the app keeps light/dark + intensity. -->
+    <script>document.documentElement.dataset.theme = "dark";</script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0A0A0B" />
+    <meta name="theme-color" content="#07080A" />
     <title>%PRODUCT_NAME%</title>
     <link rel="canonical" href="%SITE_URL%" />
     <meta name="build" content="%BUILD_COMMIT%" />
@@ -12,153 +13,134 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23C9CDD3' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23C9CDD3'/%3E%3C/svg%3E" />
   </head>
   <body>
-    <canvas id="liquid" aria-hidden="true" class="fixed inset-0 w-full h-full -z-20 block"></canvas>
-    <div class="grain" aria-hidden="true"></div>
+    <canvas id="liquid" aria-hidden="true"></canvas>
+    <div id="stage" aria-hidden="true"><canvas id="stage-back"></canvas><canvas id="stage-front"></canvas></div>
     <div id="cur" aria-hidden="true"><span class="g">+</span><span class="ring"></span><span class="tag">[open]</span></div>
-    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 bg-surface px-3 py-2 rounded-md">Skip to content</a>
+    <a href="#main" class="skip">Skip to content</a>
 
-    <header class="sticky top-0 z-40" style="background: linear-gradient(var(--t-bg) 55%, transparent)">
-      <div class="max-w-[1160px] mx-auto px-4 sm:px-8 h-16 flex items-center gap-3">
-        <a href="./" class="inline-flex items-center gap-2.5 font-display font-semibold text-[15px] tracking-tight no-underline text-text">
-          <span class="mark-wrap" aria-hidden="true"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true" class="mark"><defs><linearGradient id="mk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="mk1"/><stop offset=".45" class="mk2"/><stop offset=".5" class="mk3"/><stop offset="1" class="mk4"/></linearGradient></defs><circle cx="16" cy="16" r="13" fill="none" stroke="url(#mk)" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="url(#mk)"/><path d="M16 3v5M16 24v5M3 16h5M24 16h5" stroke="url(#mk)" stroke-width="2"/></svg><span class="mark-shine"><i></i></span></span>
-          %PRODUCT_NAME%
-        </a>
-        <nav aria-label="Main" class="ml-auto flex items-center gap-1 text-sm">
-          <a href="app/demo/" class="px-3 h-9 hidden sm:inline-flex items-center rounded-md text-muted hover:text-text no-underline">Live demo</a>
-          <a href="app/" class="px-3 h-9 hidden sm:inline-flex items-center rounded-md text-muted hover:text-text no-underline">Sign in</a>
-        </nav>
-        <div id="theme-controls"></div>
-      </div>
+    <header class="top">
+      <a href="./" class="home" aria-label="%PRODUCT_NAME% home">
+        <span class="mark-wrap" aria-hidden="true"><svg viewBox="0 0 32 32" width="22" height="22" class="mark"><defs><linearGradient id="mk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="mk1"/><stop offset=".45" class="mk2"/><stop offset=".5" class="mk3"/><stop offset="1" class="mk4"/></linearGradient></defs><circle cx="16" cy="16" r="13" fill="none" stroke="url(#mk)" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="url(#mk)"/><path d="M16 3v5M16 24v5M3 16h5M24 16h5" stroke="url(#mk)" stroke-width="2"/></svg><span class="mark-shine"><i></i></span></span>
+        <span>shiftlens</span>
+      </a>
+      <span class="top-sub">monitoring for chatbots</span>
+      <nav aria-label="Main">
+        <a href="app/demo/">live demo</a>
+        <a href="%REPO_URL%">github</a>
+        <a href="app/" class="hide-sm">sign in</a>
+      </nav>
     </header>
 
     <main id="main">
-      <!-- 1. Hero -->
-      <section id="hero" class="relative max-w-[1160px] mx-auto px-4 sm:px-8 pt-14 sm:pt-20 pb-16 sm:pb-24 min-h-[78svh] flex flex-col justify-center">
-        <p class="m-0 font-mono text-xs uppercase tracking-[.14em] text-muted inline-flex items-center gap-2.5"><i class="size-[7px] rounded-full bg-ok" style="box-shadow:0 0 0 3px var(--color-ok-tint)" aria-hidden="true"></i>monitoring for chatbots</p>
-        <p class="m-0 mt-5 font-display font-bold leading-[.86] tracking-[-.055em] text-[clamp(46px,14.5vw,184px)]" aria-hidden="true"><span class="brand-wrap" data-text="%PRODUCT_NAME%"><span class="chrome-text" id="brand" data-text="%PRODUCT_NAME%">%PRODUCT_NAME%</span><span class="sweep"><i>%PRODUCT_NAME%</i></span></span></p>
-        <h1 class="m-0 mt-7 font-display font-medium text-[clamp(24px,2.8vw,34px)] leading-[1.18] tracking-[-.02em] max-w-[22ch]">%TAGLINE%</h1>
-        <p class="m-0 mt-5 text-md text-muted max-w-[58ch] leading-[26px]">It watches every answer, learns what normal looks like, and when it drifts sends one Slack message with what changed, probably why, and the requests that prove it.</p>
-        <div class="flex flex-wrap gap-3 mt-9">
-          <a href="app/demo/" class="btn btn-chrome magnetic">See the live demo <span class="font-mono text-[11px] opacity-70" aria-hidden="true">↗</span></a>
-          <a href="%REPO_URL%" class="btn btn-line">GitHub</a>
+      <!-- 01 hero: the wordmark is the image; the inspector runs behind and through it -->
+      <section id="hero" class="hero">
+        <i class="tick tl" aria-hidden="true"></i><i class="tick tr" aria-hidden="true"></i>
+        <p class="ro ro-tl"><span class="dot" data-ro="dot"></span><span data-ro="source">recorded</span><span class="hide-sm"> · <span data-ro="company">volt electronics support bot</span></span></p>
+        <p class="ro ro-tr hide-sm">threshold <b data-ro="threshold">–</b></p>
+        <div class="hero-bottom">
+          <p class="wordmark" aria-hidden="true"><span class="brand-wrap" data-text="Shift"><span class="chrome-text brand-part">Shift</span><span class="sweep"><i>Shift</i></span></span><span class="brand-wrap" data-text="Lens"><span class="chrome-text brand-part">Lens</span><span class="sweep"><i>Lens</i></span></span></p>
+          <div class="hero-under">
+            <h1>%TAGLINE%</h1>
+            <p class="links"><a href="app/demo/" class="tl">see the live demo <span aria-hidden="true">↗</span></a><a href="%REPO_URL%" class="tl">github <span aria-hidden="true">↗</span></a></p>
+          </div>
         </div>
-        <p class="m-0 mt-5 text-sm text-muted"><a href="app/#/try" class="text-accent">Or try it on your own answers, no code →</a></p>
+        <p class="ro ro-bl hide-sm" aria-hidden="true">scroll ↓</p>
+        <p class="ro ro-br">incident <b data-ro="incident">#–</b> · <span data-ro="cause">–</span> · <b data-ro="confidence">–</b></p>
       </section>
 
-      <div class="max-w-[1160px] mx-auto px-4 sm:px-8"><p class="divider" aria-hidden="true">── <b>01</b> ── one incident, end to end ──────────────────────────────────────────────────────────────────────────────────────────────────</p></div>
-
-      <!-- 2. Scroll sequence (src/landing/sequence.ts) -->
-      <section id="sequence" aria-labelledby="seq-title">
-        <h2 id="seq-title" class="sr-only">An incident, from normal answers to the investigation note</h2>
-        <div id="seq-root" class="max-w-[1160px] mx-auto px-4 sm:px-8 min-h-[100svh] flex items-center">
-          <p class="text-muted font-mono text-sm"><span class="spin-ascii">⠋</span> loading an incident</p>
-        </div>
-      </section>
-      <!-- the pinned sequence's scroll distance, reserved from the first paint so nothing below jumps
-           when it mounts (sequence.ts sets the exact height, or removes it for reduced motion) -->
-      <div id="seq-reserve" class="motion-reduce:hidden" style="height:320vh" aria-hidden="true"></div>
-
-      <div class="max-w-[1160px] mx-auto px-4 sm:px-8"><p class="divider" aria-hidden="true">── <b>02</b> ── how it works ──────────────────────────────────────────────────────────────────────────────────────────────────────────────</p></div>
-
-      <!-- 3. How it works -->
-      <section aria-labelledby="how" class="max-w-[1160px] mx-auto px-4 sm:px-8 py-16 sm:py-24">
-        <h2 id="how" class="rv m-0 text-[clamp(30px,3.6vw,46px)] leading-[1.05] tracking-[-.035em]">Math to notice. One LLM call to explain.</h2>
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-4 lg:gap-8 mt-10 items-start">
-        <div class="grid grid-cols-1 gap-4">
-          <div class="panel hot rv p-6" style="--d:0">
-            <p class="label m-0">01 · detect</p>
-            <h3 class="text-lg mt-3 mb-2">Compare with normal</h3>
-            <p class="text-muted m-0">Each answer is embedded and compared with the bot's own normal answers. Plain math (nearest neighbours and CUSUM), no LLM, no cost per answer.</p>
-            <pre class="ascii mt-5" aria-hidden="true">· · ·· ·  ·      ◆
- ·· · · ··  ·   ◆ ◆
-────────── p99 ──────</pre>
-          </div>
-          <div class="panel hot rv p-6" style="--d:1">
-            <p class="label m-0">02 · investigate</p>
-            <h3 class="text-lg mt-3 mb-2">Gather evidence, then write</h3>
-            <p class="text-muted m-0">Code compares the numbers, clusters the changed answers and lines up version changes. Then one LLM call writes the note, and every claim must cite those results by id.</p>
-            <pre class="ascii mt-5" aria-hidden="true">[S1] length −32%
-[C2] new cluster
-[V1] prompt v2 →</pre>
-          </div>
-          <div class="panel hot rv p-6" style="--d:2">
-            <p class="label m-0">03 · alert</p>
-            <h3 class="text-lg mt-3 mb-2">One incident, not fifty pings</h3>
-            <p class="text-muted m-0">Signals become one incident, with at most 3 Slack messages: opened with the note, escalated, resolved.</p>
-            <pre class="ascii mt-5" aria-hidden="true">opened ──▶ escalated
-   └──────▶ resolved
-      max 3 messages</pre>
-          </div>
-        </div>
-          <figure class="panel rv p-2 m-0 lg:sticky lg:top-24" style="--d:1">
-            <div class="relative">
-              <video id="demo-video" class="block w-full h-auto aspect-video rounded-[10px] bg-black" width="1280" height="720"
-                     controls preload="none" playsinline poster="demo/poster.jpg"
-                     aria-label="ShiftLens demo video, 80 seconds, no sound, captions in the picture: the landing page, the demo bot's incident and investigation note, one question, and a try without code">
-                <source src="demo/shiftlens-demo.mp4" type="video/mp4">
-                <track kind="captions" src="demo/captions.vtt" srclang="en" label="English">
-              </video>
-              <button id="demo-play" type="button" aria-label="Play the 80-second demo video"
-                      class="absolute inset-0 grid place-items-center rounded-[10px] bg-black/25 hover:bg-black/10 transition-colors cursor-pointer">
-                <span class="grid place-items-center size-16 rounded-full bg-black/70 border border-white/40 shadow-lg" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" class="size-7 translate-x-[2px]" fill="#F2F3F5"><path d="M7 4.5v15l12.5-7.5z"/></svg>
-                </span>
-              </button>
+      <!-- 02 four scenes, pinned; the inspector behind them changes state (src/landing/scenes.ts) -->
+      <section id="scenes" class="scenes" aria-label="How it works, in four scenes">
+        <div class="scenes-pin">
+          <article class="scene on">
+            <p class="slabel">01 — normal</p>
+            <h2 class="sent split">It learns what normal looks like.</h2>
+          </article>
+          <article class="scene">
+            <p class="slabel">02 — change</p>
+            <h2 class="sent split">Then something changes.</h2>
+          </article>
+          <article class="scene">
+            <p class="slabel">03 — one incident</p>
+            <h2 class="sent split">One incident. <em>Not an alert for every answer.</em></h2>
+          </article>
+          <article class="scene">
+            <p class="slabel">04 — why</p>
+            <h2 class="sent split">And it tells you why, <em>with proof.</em></h2>
+            <div class="note">
+              <p class="note-meta" data-ro="note-meta">investigation note</p>
+              <p class="note-body" id="note-body" aria-hidden="true"></p>
+              <p class="sr-only" id="note-sr"></p>
             </div>
-          </figure>
+          </article>
         </div>
-        <p class="rv mt-8 mb-0 text-muted max-w-[62ch]">Built to catch when your bot's behaviour changes, not to fact-check single answers. <a href="%REPO_URL%#limits" class="text-accent">Limits</a></p>
       </section>
 
-      <div class="max-w-[1160px] mx-auto px-4 sm:px-8"><p class="divider" aria-hidden="true">── <b>03</b> ── scorecard ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────</p></div>
-
-      <!-- 4. Scorecard -->
-      <section aria-labelledby="score" class="max-w-[1160px] mx-auto px-4 sm:px-8 py-16 sm:py-24">
-        <h2 id="score" class="rv m-0 text-[clamp(30px,3.6vw,46px)] leading-[1.05] tracking-[-.035em]">Measured, misses included.</h2>
-        <p class="rv text-muted mt-4 mb-0 max-w-[62ch]" style="--d:1">8 scripted scenarios replayed through the production code: 300 normal answers, then 100 changed ones. One seed, so these are single runs, not rates.</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-          <div class="panel hot rv p-6" style="--d:0"><p class="label m-0">causes named right</p><p class="num font-display text-[34px] leading-none font-semibold tracking-tight mt-4 mb-0">7 of 8</p><p class="text-xs text-subtle mt-3 mb-0">"not sure" counts right where the cause can't be known</p></div>
-          <div class="panel hot rv p-6" style="--d:1"><p class="label m-0">false incidents, normal traffic</p><p class="num font-display text-[34px] leading-none font-semibold tracking-tight mt-4 mb-0">0 of 2</p><p class="text-xs text-subtle mt-3 mb-0">more normal answers; a harmless version bump</p></div>
-          <div class="panel hot rv p-6" style="--d:2"><p class="label m-0">prompt change caught after</p><p class="num font-display text-[34px] leading-none font-semibold tracking-tight mt-4 mb-0">10 answers</p><p class="text-xs text-subtle mt-3 mb-0">when the bot sends prompt_version</p></div>
-          <div class="panel hot rv p-6" style="--d:3"><p class="label m-0" style="color:var(--t-warn)">weak spot</p><p class="num font-display text-[34px] leading-none font-semibold tracking-tight mt-4 mb-0">topic shift</p><p class="text-xs text-subtle mt-3 mb-0">caught after 4 answers, but the note said "unknown"</p></div>
+      <!-- 05 the product, in perspective -->
+      <section id="product" class="sec">
+        <p class="slabel">05 — the app</p>
+        <h2 class="sec-h">The same incident, in the app.</h2>
+        <p class="sec-p">Screens from the live demo bot: its health page, one question asked about incident #9, and the incident with its investigation note and evidence.</p>
+        <div class="stack" id="stack">
+          <figure class="shot s1"><img src="landing/app-health.webp" srcset="landing/app-health-720.webp 720w, landing/app-health.webp 1440w" sizes="(max-width: 639px) 88vw, 60vw" alt="Bot health for the demo bot: ready since 12 Nov, the baseline review with two spot-checked answers to check, and the daily digest." width="1440" height="900" loading="lazy" decoding="async"></figure>
+          <figure class="shot s2"><img src="landing/app-ask.webp" srcset="landing/app-ask-720.webp 720w, landing/app-ask.webp 1440w" sizes="(max-width: 639px) 88vw, 60vw" alt="A question about incident #9, Why do you think this happened, answered in short claims that cite answer ids." width="1440" height="900" loading="lazy" decoding="async"></figure>
+          <figure class="shot s3"><img src="landing/app-incident.webp" srcset="landing/app-incident-720.webp 720w, landing/app-incident.webp 1440w" sizes="(max-width: 639px) 88vw, 60vw" alt="Incident #9: SEV2, cause prompt_change with confidence 0.90, the investigation note with cited evidence, and changed answers next to normal ones." width="1440" height="900" loading="lazy" decoding="async"></figure>
         </div>
-        <p class="rv mt-8 mb-0"><a href="%SCORECARD_URL%" class="text-accent">Full scorecard, including the misses →</a></p>
+        <p class="sec-link"><a href="app/demo/" class="tl">open the live demo <span aria-hidden="true">↗</span></a></p>
       </section>
 
-      <div class="max-w-[1160px] mx-auto px-4 sm:px-8"><p class="divider" aria-hidden="true">── <b>04</b> ── install ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────</p></div>
+      <!-- 06 numbers, as type -->
+      <section id="score" class="sec">
+        <p class="slabel">06 — measured</p>
+        <h2 class="sec-h">Measured, misses included.</h2>
+        <p class="sec-p">8 scripted scenarios replayed through the production code: 300 normal answers, then 100 changed ones. One seed, so these are single runs, not rates.</p>
+        <div class="nums">
+          <div class="nr"><p class="n">7 of 8</p><p class="d">causes named right<small>"not sure" counts right where the cause can't be known</small></p></div>
+          <div class="nr"><p class="n">0 of 2</p><p class="d">false incidents on normal traffic<small>more normal answers; a harmless version bump</small></p></div>
+          <div class="nr"><p class="n">10</p><p class="d">answers to catch a prompt change<small>when the bot sends prompt_version</small></p></div>
+          <p class="caveat"><span>weak spot</span> topic shift: caught after 4 answers, but the note said "unknown".</p>
+        </div>
+        <p class="sec-link"><a href="%SCORECARD_URL%" class="tl">full scorecard, including the misses →</a></p>
+      </section>
 
-      <!-- 6. Install -->
-      <section aria-labelledby="install" class="max-w-[1160px] mx-auto px-4 sm:px-8 py-16 sm:py-24">
-        <h2 id="install" class="rv m-0 text-[clamp(30px,3.6vw,46px)] leading-[1.05] tracking-[-.035em]">Three lines.</h2>
-        <p class="rv text-muted mt-4 mb-8">Get a key in <a href="app/#/setup" class="text-accent">the app</a>, then post each answer after your bot replies:</p>
-        <div class="term rv">
-          <div class="bar"><i aria-hidden="true"></i>install.py<button type="button" class="copy" data-copy="snippet" aria-label="Copy the install snippet">copy</button></div>
-<pre id="snippet"><code><span style="color:#9AA0A8">import</span> requests
-requests.post(<span style="color:#86DBFF">"%API_BASE%/ingest"</span>, headers={<span style="color:#86DBFF">"X-API-Key"</span>: KEY},
-              json={<span style="color:#86DBFF">"prompt"</span>: question, <span style="color:#86DBFF">"response"</span>: answer})</code></pre>
+      <!-- 07 how it plugs in -->
+      <section id="install" class="sec">
+        <p class="slabel">07 — install</p>
+        <h2 class="sec-h">Three lines.</h2>
+        <p class="sec-p">Get a key in <a href="app/#/setup" class="tl">the app</a>, then post each answer after your bot replies. No code? <a href="app/#/try" class="tl">Try it on your own answers →</a></p>
+        <div class="code">
+          <button type="button" class="copy" data-copy="snippet" aria-label="Copy the install snippet">copy</button>
+<pre id="snippet"><code><span class="k">import</span> requests
+requests.post(<span class="s">"%API_BASE%/ingest"</span>, headers={<span class="s">"X-API-Key"</span>: KEY},
+              json={<span class="s">"prompt"</span>: question, <span class="s">"response"</span>: answer})</code></pre>
           <span class="sr-only" aria-live="polite" data-copied></span>
         </div>
+        <figure class="screen">
+          <i class="tick tl" aria-hidden="true"></i><i class="tick tr" aria-hidden="true"></i><i class="tick bl" aria-hidden="true"></i><i class="tick br" aria-hidden="true"></i>
+          <div class="screen-in">
+            <video id="demo-video" width="1280" height="720" controls preload="none" playsinline poster="demo/poster.jpg"
+                   aria-label="ShiftLens demo video, 80 seconds, no sound, captions in the picture: the landing page, the demo bot's incident and investigation note, one question, and a try without code">
+              <source src="demo/shiftlens-demo.mp4" type="video/mp4">
+              <track kind="captions" src="demo/captions.vtt" srclang="en" label="English">
+            </video>
+            <button id="demo-play" type="button" aria-label="Play the 80-second demo video" class="play"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="#F2F3F5"><path d="M7 4.5v15l12.5-7.5z"/></svg></span></button>
+          </div>
+          <figcaption>demo · 80 s · no sound · captions in the picture</figcaption>
+        </figure>
+        <p class="sec-p after">Built to catch when your bot's behaviour changes, not to fact-check single answers. <a href="%REPO_URL%#limits" class="tl">Limits</a></p>
       </section>
 
-      <!-- 7. Offer -->
-      <section aria-labelledby="offer" class="max-w-[1160px] mx-auto px-4 sm:px-8 pb-24">
-        <div class="panel rv p-7 sm:p-12 grid gap-8 md:grid-cols-[1fr_auto] items-center">
-          <div>
-            <h2 id="offer" class="m-0 text-[clamp(28px,3.2vw,40px)] leading-[1.08] tracking-[-.03em] max-w-[22ch]">Have a bot with real traffic?</h2>
-            <p class="text-muted mt-3 mb-0 max-w-[56ch]">Send me 50 answers and I'll send back what it finds.</p>
-            <p class="text-xs text-subtle mt-4 mb-0">Issues are public: share anonymised answers only, never customer data or keys.</p>
-          </div>
-          <a href="%REPO_URL%/issues/new?title=50+answers" class="btn btn-line">Open a GitHub issue</a>
-        </div>
+      <!-- closing -->
+      <section id="offer" class="sec closing">
+        <h2 class="big">Have a bot with real traffic? <em>Send me 50 answers.</em></h2>
+        <p class="sec-link"><a href="%REPO_URL%/issues/new?title=50+answers" class="tl">open a github issue →</a></p>
+        <p class="fine">Issues are public: share anonymised answers only, never customer data or keys.</p>
       </section>
     </main>
 
-    <footer class="border-t border-line">
-      <div class="max-w-[1160px] mx-auto px-4 sm:px-8 py-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-subtle">
-        <a href="%REPO_URL%" class="text-subtle hover:text-text">GitHub</a>
-        <a href="privacy/" class="text-subtle hover:text-text">Privacy</a>
-        <span>MIT licence</span>
-      </div>
+    <footer class="foot">
+      <a href="%REPO_URL%">github</a>
+      <a href="privacy/">privacy</a>
+      <span>mit licence</span>
     </footer>
     <script type="module" src="/src/landing/main.ts"></script>
   </body>

@@ -19,23 +19,23 @@ void main(){vec2 uv=gl_FragCoord.xy/res;uv.x*=res.x/res.y;
  float band=.5+.5*sin(nr.y*5.+nr.x*2.5+c*4.);
  float spec=pow(max(0.,dot(nr,normalize(vec3(mouse.x-uv.x,mouse.y-uv.y,.9)))),24.);
  float metal=band*.55+spec*.9;
- vec3 dark=vec3(.02,.022,.026)+vec3(.11,.115,.125)*metal*(.3+inten*.6)+vec3(.30,.55,.75)*spec*.06*inten;
+ vec3 dark=vec3(.02,.022,.026)+vec3(.11,.115,.125)*metal*(.3+inten*.6)*.6+vec3(.30,.55,.75)*spec*.06*inten;
  vec3 lite=vec3(.85,.855,.85)+vec3(.12)*inten-vec3(.09,.09,.085)*(1.-metal)*(.4+.3*(1.-inten));
  gl_FragColor=vec4(mix(min(dark,vec3(.155)),max(lite,vec3(.83)),light),1.);}`;
 
 const IDLE_MS = 4000;
 
-export function startLiquid(cv: HTMLCanvasElement, coarse: boolean): boolean {
+export function startLiquid(cv: HTMLCanvasElement, coarse: boolean): { stop(): void } | null {
   const g = cv.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power", failIfMajorPerformanceCaveat: true });
-  if (!g) return false;
+  if (!g) return null;
   // No GPU (software rasteriser): the shader would block the main thread; keep the static background.
   const dbg = g.getExtension("WEBGL_debug_renderer_info");
   const renderer = String(dbg ? g.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER));
-  if (/swiftshader|llvmpipe|software|basic render|mesa offscreen/i.test(renderer)) return false;
+  if (/swiftshader|llvmpipe|software|basic render|mesa offscreen/i.test(renderer)) return null;
   const sh = (type: number, src: string) => { const s = g.createShader(type)!; g.shaderSource(s, src); g.compileShader(s); return s; };
   const pr = g.createProgram()!;
   g.attachShader(pr, sh(g.VERTEX_SHADER, VS)); g.attachShader(pr, sh(g.FRAGMENT_SHADER, FS)); g.linkProgram(pr);
-  if (!g.getProgramParameter(pr, g.LINK_STATUS)) return false;
+  if (!g.getProgramParameter(pr, g.LINK_STATUS)) return null;
   g.useProgram(pr);
   g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer());
   g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
@@ -45,7 +45,7 @@ export function startLiquid(cv: HTMLCanvasElement, coarse: boolean): boolean {
   // canvas pixels per CSS pixel: 0.4 on desktop (as before); phones cap DPR at 1, then 0.32
   const scale = coarse ? Math.min(devicePixelRatio || 1, 1) * 0.32 : 0.4;
   const minFrame = coarse ? 1000 / 30 - 2 : 0;
-  let amp = 0, t = 0, last = 0, drawn = 0, running = false, lastInput = 0, sy = scrollY, scrollF = sy / innerHeight;
+  let stopped = false, amp = 0, t = 0, last = 0, drawn = 0, running = false, lastInput = 0, sy = scrollY, scrollF = sy / innerHeight;
   const m = [0.7, 0.6], target = [0.7, 0.6];
   let w = 0, h = 0;
   const size = () => {
@@ -61,7 +61,7 @@ export function startLiquid(cv: HTMLCanvasElement, coarse: boolean): boolean {
     g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
   };
   const tick = (now: number) => {
-    if (document.hidden) { running = false; return; }
+    if (document.hidden || stopped) { running = false; return; }
     if (now - drawn < minFrame) { requestAnimationFrame(tick); return; }
     const dt = Math.min(0.05, (now - last) / 1000 || 0.016); last = now; drawn = now;
     t += dt;
@@ -75,7 +75,7 @@ export function startLiquid(cv: HTMLCanvasElement, coarse: boolean): boolean {
   };
   const go = () => {
     lastInput = performance.now();
-    if (!running && !document.hidden) { running = true; last = lastInput; drawn = 0; requestAnimationFrame(tick); }
+    if (!running && !document.hidden && !stopped) { running = true; last = lastInput; drawn = 0; requestAnimationFrame(tick); }
   };
   const poke = (x: number, y: number, energy: number) => {
     target[0] = x / innerWidth; target[1] = 1 - y / innerHeight;
@@ -105,5 +105,5 @@ export function startLiquid(cv: HTMLCanvasElement, coarse: boolean): boolean {
     amp = Math.min(1, amp + Math.min(0.2, Math.abs(d) / 900));
     go();
   }, { passive: true });
-  return true;
+  return { stop() { stopped = true; } };
 }

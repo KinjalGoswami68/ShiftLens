@@ -10,6 +10,41 @@ Source: the ui-ux-pro-max skill had no matching style ("Liquid Glass" is glassmo
 Space Grotesk as the display face (its "Tech Startup" pairing), and the magnetic-button preset
 with its limit of 1-2 magnetic elements per screen.
 
+## Landing page v3 (2026-11-24): editorial + the inspector
+
+Supersedes the landing-page parts below (cards, stat tiles, pill, sequence, theme controls on
+the landing page). The app keeps v2 unchanged. Built in `web/src/landing/`.
+
+- Dark only (near-black `#07080A` and silver); green only as the tiny live dot, red only for
+  incidents / the new version's answers. 12-column grid, left-aligned, thin 1 px rules, corner
+  ticks, numbered mono labels, radius 0-4 px. No cards.
+- Type: Space Grotesk (wordmark, tagline), Instrument Serif 400 + italic (scene sentences, section
+  heads, numbers; SIL OFL, self-hosted), JetBrains Mono (labels, ids, readouts), IBM Plex Sans (body).
+- Hero: the wordmark fills the width (`100cqw / 4.06`; phones stacked "Shift / Lens",
+  `100cqw / 2.08`), chrome + compositor-only sweep. Behind/through it the inspector
+  (`inspector.ts`, 2D canvas back + front): answers drift away, a lens marks them red, label
+  `<version> · <n> answers`. Readouts from one dataset (`data.ts`): live demo inside 09:00-21:00
+  IST, else the recorded incident ("recorded 12 nov").
+- Scenes (`scenes.ts`, CSS sticky + one passive scroll listener, no GSAP): 1 normal cluster, 2 the real trace
+  (red from the version marker; threshold above every point because none crossed), 3 one red
+  group under the lens, 4 the note word by word with its cited ids.
+- Honesty rules: red = on the new version (per answer, not by position); never shown crossing the
+  threshold unless an answer did; dates only, never clock times.
+
+### Smoothness rules (measured 2026-11-24, `measure` harness: rAF + long-animation-frame per section)
+
+| Rule | Why (measured) |
+|---|---|
+| No root CSS variable per pointer move on the landing (`trackPointer` not used) | restyled the whole page and repainted the 300 px wordmark on every mouse move |
+| Reveals are opacity on spans built once; only the visible scene's words keep `will-change: opacity` (note words none) | promoting/demoting a word per transition re-rasterised the 100 px sentence: GPU raster dominated scroll frames (scenes 32 -> 59 fps on laptop); a layer for every word (~130) made each frame's commit expensive on phones |
+| One passive scroll listener, one update per frame, `scrollY` read first, all offsets cached (re-measured on real resizes only) | ScrollTrigger's scroll reads after our class changes forced a style recalculation every frame (~500 ms per pass on the 4x phone); GSAP is no longer used (-45 KB) |
+| No animated `filter: blur`; product screens use transform + opacity only | blur re-applied every scroll frame |
+| No full-screen `mix-blend-mode` layers (grain removed on landing, cursor not blended) | full-screen blend over canvases that change every frame |
+| Stage: pixel ratio <= 1.5 (phones 1.25), 480 points (phones 150), phones 30 fps, one loop, stops when hidden / off-screen / idle 30 s | fill rate and CPU |
+| Light mode: if > 20 % of 90 frames are slow, the stage halves its points, goes to DPR 1 and 30 fps, and the ripple and sweeps stop (`html.lite`) | safety net for slow devices |
+| Stage created at load, before the first paint | deferring it put the first GPU canvas setup into Lighthouse TBT (68 -> 829 ms) |
+| Ripple background: laptops only | ~1 fps on laptop; on phones a touch handler + WebGL redraw per scroll frame while the points already move |
+
 ## Identity
 
 brand word); everything you read sits on quiet graphite. Status colours keep their meaning
@@ -65,7 +100,7 @@ All three are free (SIL OFL) and self-hosted as latin woff2 in the real sites.
 | Shine sweep (compositor-only: a window and the text copy inside it move in opposite directions, transform only) | landing: brand word, logo mark, primary button; 7 s cycle, staggered | paused while the hero is off screen; hidden under reduced motion. Measured 2026-11-22: 0 paints / 0 layouts in 4 s of sweeping |
 | Tap pulse (press + fading ring, `scale`/`transform`/`opacity`) | landing buttons and cards, touch only | |
 | Scroll reveals (rise + fade, staggered 70 ms) | landing sections; app: first load of a screen only | once per element |
-| Pinned scroll sequence (GSAP + ScrollTrigger) | landing page | as now |
+| Pinned scroll sequence | landing page | replaced by the v3 scenes (see the top of this file) |
 | ASCII spinner (braille frames) | loading / waking-up states | |
 
 Reduced motion: no WebGL animation, no bob, no parallax, no decode, reveals shown at once,
