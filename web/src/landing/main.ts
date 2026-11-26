@@ -9,16 +9,6 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const fine = matchMedia("(pointer: fine)").matches;
 // no trackPointer() here: a root CSS variable per mouse move restyles the whole page and repaints the wordmark
 
-// ---- readouts: one dataset (live demo or the recorded incident) drives all of them ----
-function fill(sc: Scene) {
-  const d = sc.d, set = (k: string, v: string) => document.querySelectorAll<HTMLElement>(`[data-ro="${k}"]`).forEach(el => { el.textContent = v; });
-  set("threshold", d.distance_series.threshold?.toFixed(3) ?? "–");
-  set("incident", `#${d.incident.id}`);
-  set("cause", d.note!.cause);
-  set("confidence", d.note!.confidence.toFixed(2));
-}
-fill(snapshotScene);
-
 // ---- the inspector: a still frame at load; motion starts on the first interaction ----
 let liquid: { stop(): void } | null = null;
 // safety net: on a device that keeps missing frames, the stage switches to its light mode
@@ -58,7 +48,7 @@ const start = () => {
   import("./scenes").then(m => idle(() => { scenes = m.mount(stage, scene, reduced); }));
   load().then(sc => {
     if (sc === scene) return;
-    scene = sc; fill(sc); stage.setScene(sc); scenes?.setScene(sc);
+    scene = sc; stage.setScene(sc); scenes?.setScene(sc);
   });
 };
 evs.forEach(ev => addEventListener(ev, start, { passive: true }));
